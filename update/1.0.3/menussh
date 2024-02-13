@@ -1,0 +1,102 @@
+#!/bin/bash
+MYIP=$(wget -qO- ipinfo.io/ip);
+echo "Checking VPS"
+source cekip1
+COLOR1='\033[0;35m'
+IPurple='\033[0;95m'      # Purple
+
+NC='\e[0m'
+
+# // Export Color & Information
+export RED='\033[0;31m'
+export GREEN='\033[0;32m'
+export YELLOW='\033[0;33m'
+export BLUE='\033[0;34m'
+export PURPLE='\033[0;35m'
+export CYAN='\033[0;36m'
+export LIGHT='\033[0;37m'
+export NC='\033[0m'
+
+DB="/var/lib/minacantik/pemakaian.db"
+
+function deletessh (){
+    memberssh
+    echo "ctrl + c untuk exit"
+    read -p "Masukkan Username: " username
+    cekuser=$(sqlite3 "$DB" "SELECT username FROM userssh WHERE username = '$username';")
+    if [[ $cekuser == "" ]]; then
+    echo "username tidak ada"
+    exit 0
+    elif [[ $username == "" ]]; then
+    echo "username tidak boleh kosong"
+    exit 0
+    fi
+    # cek protocol
+# delete user in database
+sqlite3 "$DB" "DELETE FROM userssh WHERE username = '$username';"
+# delete jam dan hari
+userdel $username && rm -rf /home/$username
+echo "user $username berhasil dihapus"
+}
+
+function renewssh(){
+memberssh
+echo "ctrl + c untuk exit"
+read -p "Masukkan Username: " username
+cekuser=$(sqlite3 "$DB" "SELECT username FROM userssh WHERE username = '$username';")
+if [[ $cekuser == "" ]]; then
+echo "username tidak ada"
+exit 0
+elif [[ $username == "" ]]; then
+echo "username tidak boleh kosong"
+exit 0
+fi
+read -p "tambah berapa hari: " masaaktif
+timestamp=$(date +%s)
+# timestamp + masaaktif
+exp=$(($timestamp + $masaaktif*86400))
+# timestamp to date and hour and minute
+expdate=$(date -d @$exp)
+# update expired
+sqlite3 "$DB" "UPDATE userssh SET exp = '$exp' WHERE username = '$username';"
+echo "user $username berhasil diperpanjang sampai $expdate"
+
+}
+
+echo -e "$COLOR1â”Œâ”€â”€â”€â”€â”€â”€â”€â”€â€¢ ${NC}${COLBG1}SSH MENU ${NC}$COLOR1>>>               ${NC}"
+echo -e "$COLOR1â””â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€${NC}"
+echo -e " ${PURPLE}â”Œâ”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”${NC}"
+echo -e " ${PURPLE}$NC   ${COLOR1}[01]${NC} â€¢ CREATE      ${COLOR1}     [05]${NC} â€¢ ALL USER${NC}   ${PURPLE}$NC"
+echo -e " ${PURPLE}$NC   ${COLOR1}[02]${NC} â€¢ DELETE${NC}    ${COLOR1}       [06]${NC} â€¢ LIST PELANGGAR    ${PURPLE}$NC"
+echo -e " ${PURPLE}$NC   ${COLOR1}[03]${NC} â€¢ RENEW${NC}    ${COLOR1}        [07]${NC} â€¢ LIST USER EXP   ${PURPLE}$NC"
+echo -e " ${PURPLE}$NC   ${COLOR1}[04]${NC} â€¢ CEK USER ONLINE${NC}  ${COLOR1}[08]${NC} â€¢ TRIAL SSH   ${PURPLE}$NC"
+echo -e " ${PURPLE}$NC                                              ${NC} ${PURPLE}$NC"
+echo -e " ${PURPLE}$NC   ${COLOR1}[00]${NC} â€¢ GO BACK${NC}                              ${PURPLE}$NC"
+echo -e " ${PURPLE}â””â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”˜${NC}"
+echo -e "${PURPLE}â”Œâ”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ BY â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”${NC}"
+echo -e "${PURPLE}â”‚${NC}                 â€¢  The Moon  â€¢                  ${PURPLE}â”‚$NC"
+echo -e "${PURPLE}â””â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”˜${NC}" 
+echo -e ""
+read -p " Select menu :  "  opt
+echo -e ""
+case $opt in
+1)
+  createssh ;;
+2) 
+ deletessh ;;
+3) 
+ renewssh ;;
+4) 
+ cekssh ;;
+5) 
+ memberssh ;;
+6) 
+ pelanggarssh ;;
+7) 
+ listexpssh ;;
+8) 
+ trial ssh ;;
+0) clear ; menu ;; 
+x) exit ;; 
+*) echo -e "Press any key to back exit" ; sleep 1 ; menussh ;;
+esac

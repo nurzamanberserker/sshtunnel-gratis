@@ -1,0 +1,130 @@
+#!/bin/bash
+#!/bin/bash
+cat /etc/xray/config.json | grep '^#' | cut -d ' ' -f 2 | sort | uniq > .xrayuser
+data=$(cat .xrayuser | sed 's/#[^ ]*//g')
+today=$(date +%Y-%m-%d)
+DB="/var/lib/minacantik/pemakaian.db"
+# token=5922026926:AAE5t2CXnOOT57zWdua2wfHKKG9URGEQdP0
+# chatid=1106186898
+token=$(sqlite3 $DB "SELECT token FROM telegram WHERE id = '1';")
+chatid=$(sqlite3 $DB "SELECT chatid FROM telegram WHERE id = '1';")
+function convert_bytes() {
+  bytes=$1
+
+  if (( bytes < 1024 )); then
+    echo "${bytes}B"
+  elif (( bytes < 1048576 )); then
+    echo "$(echo "scale=2; $bytes / 1024" | bc)KB"
+  elif (( bytes < 1073741824 )); then
+    echo "$(echo "scale=2; $bytes / 1048576" | bc)MB"
+  else
+    echo "$(echo "scale=2; $bytes / 1073741824" | bc)GB"
+  fi
+}
+# echo "Username | Hari ini | Total"
+header1="Username"
+header2="Hari ini"
+header3="Total"
+header4="Limit BW"
+header5="Limit IP"
+# Print the table headers
+# printf "%-20s %-10s %-10s %-10s %-10s\n" "$header1" "$header2" "$header3" "$header4" "$header5"
+for USER in $data 
+do
+if xray api statsquery --server=127.0.0.1:10085 | grep -q $USER; then
+    xray api stats --name="user>>>$USER>>>traffic>>>downlink" --server=127.0.0.1:10085 > .makan1
+    JSON=$(cat .makan1)
+    # Mendekode JSON menggunakan jq dan mengambil nilai dari kunci "value"
+    VALUE=$(echo $JSON | jq -r '.stat.value')
+    xray api stats --name="user>>>$USER>>>traffic>>>uplink" --server=127.0.0.1:10085 > .makan2
+    JSON1=$(cat .makan2)
+    # Mendekode JSON menggunakan jq dan mengambil nilai dari kunci "value"
+    VALUE1=$(echo $JSON1 | jq -r '.stat.value')  
+    
+    #Value total
+    total=$(($VALUE+$VALUE1))
+    else
+    total="0"
+  fi
+    # Run the SQLite query to get the sum of use for the user and date
+    SUM_DAY=$(sqlite3 "$DB" "SELECT COALESCE(SUM(use), 0) FROM jam WHERE username = '$USER' AND date = '$today';")
+    SUM_DAY2=$(sqlite3 "$DB" "SELECT COALESCE(SUM(use), 0) FROM hari WHERE username = '$USER'")
+    limitbw=$(sqlite3 $DB "SELECT bw FROM user WHERE username = '$USER'")
+    nemu="${limitbw:-null}"
+if [ "$nemu" = "null" ]; then
+limitbw="100221225472"
+fi
+    limitip=$(sqlite3 "$DB" "SELECT ip FROM user WHERE username = '$USER'")
+    nemu1="${limitip:-null}"
+if [ "$nemu1" = "null" ]; then
+limitip="10"
+fi
+    # Print the result
+ 
+
+    sum=$(($SUM_DAY+$total))
+    sumall=$(($SUM_DAY2+$sum))
+if [ "$sumall" -gt "$limitbw" ]; then
+
+curl -s -X POST "https://api.telegram.org/bot$token/sendMessage" -d chat_id="$chatid" -d text="$USER limit $(convert_bytes $sumall) / $(convert_bytes $limitbw)" > /dev/null 2>&1
+# add pelanggar
+deskripsi2="$(convert_bytes $sumall) / $(convert_bytes $limitbw)"  
+exp2=$(sqlite3 "$DB" "SELECT exp FROM user WHERE username = '$USER';")
+QUERY2="INSERT INTO pelanggar (username, jenis, exp, detail) VALUES ('$USER', 'bw', '$exp2', '$deskripsi2');"
+sqlite3 $DB "$QUERY2"
+protocol=$(sqlite3 "$DB" "SELECT protocol FROM user WHERE username = '$USER';")
+# delete user in user in sqlite
+# sqlite3 $DB "DELETE FROM user WHERE username = '$USER';"
+# delete user in xray
+if [ "$protocol" = "vmess" ]; then
+sed -i "/^### $USER -/,/^},{/d" /etc/xray/config.json
+elif [ "$protocol" = "vless" ]; then
+sed -i "/^#& $USER -/,/^},{/d" /etc/xray/config.json
+elif [ "$protocol" = "trojan" ]; then
+sed -i "/^#! $USER -/,/^},{/d" /etc/xray/config.json
+fi
+jam
+systemctl restart xray > /dev/null 2>&1
+
+
+
+
+
+fi
+
+cat /root/limit/log | grep $USER | awk '{print $3}' | sed 's/tcp://g' | sed 's/:0//g' | sort | uniq > /root/limit/$USER
+jumlahdata=$(wc -l < /root/limit/$USER )
+if [ $jumlahdata -gt $limitip ]; then
+curl -s -X POST "https://api.telegram.org/bot$token/sendMessage" -d chat_id="$chatid" -d text="$USER login $jumlahdata IP" > /dev/null 2>&1
+# addpelanggar
+textlimitip="$jumlahdata / $limitip IP"
+exp2=$(sqlite3 "$DB" "SELECT exp FROM user WHERE username = '$USER';")
+sqlite3 $DB "INSERT INTO pelanggar (username, jenis, exp, detail) VALUES ('$USER', 'ip', '$exp2', '$textlimitip');"
+# delete user in user in sqlite
+# sqlite3 $DB "DELETE FROM user WHERE username = '$USER';"
+# delete user in xray
+protocol=$(sqlite3 "$DB" "SELECT protocol FROM user WHERE username = '$USER';")
+# delete user in user in sqlite
+# sqlite3 $DB "DELETE FROM user WHERE username = '$USER';"
+# delete user in xray
+if [ "$protocol" = "vmess" ]; then
+sed -i "/^### $USER -/,/^},{/d" /etc/xray/config.json
+elif [ "$protocol" = "vless" ]; then
+sed -i "/^#& $USER -/,/^},{/d" /etc/xray/config.json
+elif [ "$protocol" = "trojan" ]; then
+sed -i "/^#! $USER -/,/^},{/d" /etc/xray/config.json
+fi
+jam
+systemctl restart xray > /dev/null 2>&1
+
+fi
+    # echo "$USER| $(convert_bytes $sum) | $(convert_bytes $sumall)"
+
+ 
+# row1=("$USER" "$(convert_bytes $sum)" "$(convert_bytes $sumall)" "$(convert_bytes $limitbw)" "$limitip") 
+# printf "%-20s %-10s %-10s %-10s %-10s\n" "${row1[@]}"
+done
+
+
+
+

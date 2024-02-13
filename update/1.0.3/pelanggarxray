@@ -1,0 +1,68 @@
+#!/bin/bash
+COLOR1='\033[0;35m'
+NC='\e[0m'
+
+DB="/var/lib/minacantik/pemakaian.db"
+
+# Execute the SQLite query and store the result in a variable
+result=$(sqlite3 -separator "|" $DB "SELECT * FROM pelanggar;")
+
+echo -e "$COLOR1â”Œâ”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”${NC}"
+echo -e "$COLOR1â”‚${NC} ${COLBG1}              â€¢ PELANGGAR XRAY â€¢               ${NC} $COLOR1â”‚$NC"
+echo -e "$COLOR1â””â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”˜${NC}"
+# Print the table headers
+printf "%-10s %-10s %-10s %-20s\n" "username" "jenis" "exp" "detail"
+
+# Read the result line by line
+while IFS= read -r line; do
+    # Split the line into an array of fields
+    IFS="|" read -ra row <<< "$line"
+    # Print the table row
+    printf "%-10s %-10s %-10s %-20s\n" "${row[0]}" "${row[1]}" "${row[2]}" "${row[3]}"
+done <<< "$result"
+echo -e "$COLOR1â””â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”˜${NC}"
+read -p "restore(username): " restore
+cekuser=$(sqlite3 "$DB" "SELECT username FROM pelanggar WHERE username = '$restore';")
+if [[ $cekuser == "" ]]; then
+echo "username tidak ada"
+exit 0
+elif [[ $restore == "" ]]; then
+echo "username tidak boleh kosong"
+exit 0
+fi
+# read -p "exp (hari): " masaaktif
+# read -p "limit ip: " ip
+# read -p "limit kuota: " bw
+# # bw is byte, convert to GB
+# bw=$(($bw*1024*1024*1024))
+
+
+
+protocol=$(sqlite3 "$DB" "SELECT protocol FROM user WHERE username = '$restore';")
+uuid=$(sqlite3 "$DB" "SELECT id FROM user WHERE username = '$restore';")
+exp=$(sqlite3 "$DB" "SELECT exp FROM user WHERE username = '$restore';")
+
+if [ "$protocol" = "vmess" ]; then
+sed -i '/#vmess$/a\### '"$restore -"'\
+},{"id": "'""$uuid""'","alterId": '"0"',"email": "'""$restore""'"' /etc/xray/config.json
+
+sed -i '/#vmessgrpc$/a\### '"$restore -"'\
+},{"id": "'""$uuid""'","alterId": '"0"',"email": "'""$restore""'"' /etc/xray/config.json
+fi
+if [ "$protocol" = "vless" ]; then
+sed -i '/#vless$/a\#& '"$restore -"'\
+},{"id": "'""$uuid""'","email": "'""$restore""'"' /etc/xray/config.json
+sed -i '/#vlessgrpc$/a\#& '"$restore -"'\
+},{"id": "'""$uuid""'","email": "'""$restore""'"' /etc/xray/config.json
+fi
+if [ "$protocol" = "trojan" ]; then
+sed -i '/#trojanws$/a\#! '"$restore -"'\
+},{"password": "'""$uuid""'","email": "'""$restore""'"' /etc/xray/config.json
+sed -i '/#trojangrpc$/a\#! '"$restore -"'\
+},{"password": "'""$uuid""'","email": "'""$restore""'"' /etc/xray/config.json
+fi
+sqlite3 $DB "DELETE FROM pelanggar WHERE username = '$restore';"
+jam
+service xray restart > /dev/null 2>&1
+
+

@@ -1,0 +1,305 @@
+#!/bin/bash
+MYIP=$(wget -qO- ipinfo.io/ip);
+echo "Checking VPS"
+hariini=`date +%d-%m-%Y`
+function convert_bytes() {
+  bytes=$1
+
+  if (( bytes < 1024 )); then
+    echo "${bytes}B"
+  elif (( bytes < 1048576 )); then
+    echo "$(echo "scale=2; $bytes / 1024" | bc)KB"
+  elif (( bytes < 1073741824 )); then
+    echo "$(echo "scale=2; $bytes / 1048576" | bc)MB"
+  else
+    echo "$(echo "scale=2; $bytes / 1073741824" | bc)GB"
+  fi
+}
+source cekip1
+COLOR1='\033[0;35m'
+IPurple='\033[0;95m'      # Purple
+DB="/var/lib/minacantik/pemakaian.db"
+
+NC='\e[0m'
+
+# // Export Color & Information
+export RED='\033[0;31m'
+export GREEN='\033[0;32m'
+export YELLOW='\033[0;33m'
+export BLUE='\033[0;34m'
+export PURPLE='\033[0;35m'
+export CYAN='\033[0;36m'
+export LIGHT='\033[0;37m'
+export NC='\033[0m'
+
+DB="/var/lib/minacantik/pemakaian.db"
+function trialxray (){
+echo -e "$COLOR1â”Œâ”€â”€â”€â€¢ ${NC}${COLBG1}Pilih Protocol ${NC}$COLOR1>>>               ${NC}"
+echo -e "$COLOR1â””â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”${NC}"
+echo -e " ${PURPLE}$NC   ${COLOR1}[01]${NC} VMESS${NC}   ${PURPLE}$NC"
+echo -e " ${PURPLE}$NC   ${COLOR1}[02]${NC} VLESS${NC}   ${PURPLE}$NC"
+echo -e " ${PURPLE}$NC   ${COLOR1}[03]${NC} TROJAN${NC}   ${PURPLE}$NC"
+echo -e "$COLOR1â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€${NC}"
+read -p "Pilih: " pilihan
+if [[ $pilihan == 1 ]]; then
+trial vmess
+elif [[ $pilihan == 2 ]]; then
+trial vless
+elif [[ $pilihan == 3 ]]; then
+trial trojan
+fi
+}
+function editlimit (){
+cekxray
+read -p "Masukkan Username: " username
+cekuser=$(sqlite3 "$DB" "SELECT username FROM user WHERE username = '$username';")
+if [[ $cekuser == "" ]]; then
+echo "username tidak ada"
+exit 0
+elif [[ $username == "" ]]; then
+echo "username tidak boleh kosong"
+exit 0
+fi
+echo -e "$COLOR1â”Œâ”€â”€â”€â€¢ ${NC}${COLBG1}$username ${NC}$COLOR1>>>               ${NC}"
+echo -e "$COLOR1â””â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”${NC}"
+echo -e " ${PURPLE}$NC   ${COLOR1}[01]${NC} EDIT LIMIT IP${NC}   ${PURPLE}$NC"
+echo -e " ${PURPLE}$NC   ${COLOR1}[02]${NC} EDIT LIMIT BANDWIDTH${NC}   ${PURPLE}$NC"
+echo -e "$COLOR1â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€${NC}"
+read -p "Pilih: " pilihan
+if [[ $pilihan == 1 ]]; then
+# CEK LIMIT IP
+limitip=$(sqlite3 "$DB" "SELECT ip FROM user WHERE username = '$username';")
+echo "Limit IP: $limitip"
+read -p "Masukkan Limit IP baru: " limitipnew
+sqlite3 "$DB" "UPDATE user SET ip = '$limitipnew' WHERE username = '$username';"
+echo "Limit IP berhasil diubah"
+elif [[ $pilihan == 2 ]]; then
+# CEK LIMIT BANDWIDTH
+limitbandwidth=$(sqlite3 "$DB" "SELECT bw FROM user WHERE username = '$username';")
+# limit to GB
+limitbandwidth=$(convert_bytes $limitbandwidth)
+echo "Limit Bandwidth: $limitbandwidth "
+read -p "Masukkan Limit Bandwidth baru (GB): " limitbandwidthnew
+# limitbandwidth * 1024 * 1024 * 1024
+limitbandwidthnew=$(($limitbandwidthnew*1024*1024*1024))
+sqlite3 "$DB" "UPDATE user SET bw = '$limitbandwidthnew' WHERE username = '$username';"
+echo "Limit Bandwidth berhasil diubah"
+else
+echo "pilihan tidak ada"
+exit 0
+fi
+
+
+
+
+
+}
+
+
+function dailyusage (){
+  cekxray
+  read -p "Masukkan Username: " username
+  cekuser=$(sqlite3 "$DB" "SELECT username FROM user WHERE username = '$username';")
+if [[ $cekuser == "" ]]; then
+echo "username tidak ada"
+exit 0
+elif [[ $username == "" ]]; then
+echo "username tidak boleh kosong"
+exit 0
+fi
+usagehariini=$(sqlite3 "$DB" "SELECT username FROM user WHERE username = '$username';")
+echo -e "$COLOR1â”Œâ”€â”€â”€â€¢ ${NC}${COLBG1}$username ${NC}$COLOR1>>>               ${NC}"
+echo -e "$COLOR1â””â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”${NC}"
+printf "%-20s %-20s\n" "Tanggal" "Pemakaian"
+
+# allday=$(sqlite3 "$DB" "SELECT * FROM hari WHERE username = '$username';")
+# Ambil semua data
+allday=$(sqlite3 -separator " " "$DB" "SELECT date, use FROM hari WHERE username = '$username';")
+
+# Baca setiap baris output
+echo "$allday" | while IFS= read -r line
+do
+   # Pisahkan tanggal dan use
+   tanggal=$(echo $line | cut -d' ' -f1)
+   use=$(echo $line | cut -d' ' -f2)
+
+   # Konversi use ke GB
+   
+
+   # Cetak hasil
+   printf "%-20s %-20s\n" "$tanggal" "$(convert_bytes $use)"
+done
+
+# printf "%-20s %-20s\n" "$hariini" "$jumlah" 
+echo -e "$COLOR1â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€${NC}"
+
+
+
+}
+function resetxray (){
+cekxray
+read -p "Masukkan Username: " username
+cekuser=$(sqlite3 "$DB" "SELECT username FROM user WHERE username = '$username';")
+if [[ $cekuser == "" ]]; then
+echo "username tidak ada"
+exit 0
+elif [[ $username == "" ]]; then
+echo "username tidak boleh kosong"
+exit 0
+fi
+# 2 pilihan dengan angka
+echo "1) reset usage hari ini"
+echo "2) Reset usage total"
+read -p "Pilih: " pilihan
+if [[ $pilihan == 1 ]]; then
+sqlite3 "$DB" "DELETE FROM jam WHERE username = '$username';"
+echo "reset usage hari ini berhasil"
+elif [[ $pilihan == 2 ]]; then
+sqlite3 "$DB" "DELETE FROM jam WHERE username = '$username';"
+sqlite3 "$DB" "DELETE FROM hari WHERE username = '$username';"
+echo "reset usage total berhasil"
+else
+echo "pilihan tidak ada"
+exit 0
+fi
+}
+function createxray (){
+echo -e "$COLOR1â”Œâ”€â”€â”€â€¢ ${NC}${COLBG1}Pilih Protocol ${NC}$COLOR1>>>               ${NC}"
+echo -e "$COLOR1â””â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”${NC}"
+echo -e " ${PURPLE}$NC   ${COLOR1}[01]${NC} VMESS${NC}   ${PURPLE}$NC"
+echo -e " ${PURPLE}$NC   ${COLOR1}[02]${NC} VLESS${NC}   ${PURPLE}$NC"
+echo -e " ${PURPLE}$NC   ${COLOR1}[03]${NC} TROJAN${NC}   ${PURPLE}$NC"
+echo -e "$COLOR1â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€${NC}"
+read -p "Pilih: " pilihan
+if [[ $pilihan == 1 ]]; then
+createv
+elif [[ $pilihan == 2 ]]; then
+createl
+elif [[ $pilihan == 3 ]]; then
+createt
+fi
+}
+function deletexray (){
+    cekxray
+    echo "ctrl + c untuk exit"
+    read -p "Masukkan Username: " username
+    cekuser=$(sqlite3 "$DB" "SELECT username FROM user WHERE username = '$username';")
+    if [[ $cekuser == "" ]]; then
+    echo "username tidak ada"
+    exit 0
+    elif [[ $username == "" ]]; then
+    echo "username tidak boleh kosong"
+    exit 0
+    fi
+    # cek protocol
+    protocolxray=$(sqlite3 "$DB" "SELECT protocol FROM user WHERE username = '$username';")
+    if [ "$protocolxray" = "vmess" ]; then
+sed -i "/^### $username -/,/^},{/d" /etc/xray/config.json
+elif [ "$protocolxray" = "vless" ]; then
+sed -i "/^#& $username -/,/^},{/d" /etc/xray/config.json
+elif [ "$protocolxray" = "trojan" ]; then
+sed -i "/^#! $username -/,/^},{/d" /etc/xray/config.json
+fi
+# delete user in database
+sqlite3 "$DB" "DELETE FROM user WHERE username = '$username';"
+# delete jam dan hari
+sqlite3 "$DB" "DELETE FROM jam WHERE username = '$username';"
+sqlite3 "$DB" "DELETE FROM hari WHERE username = '$username';"
+jam
+service xray restart > /dev/null 2>&1
+echo "user $username berhasil dihapus"
+}
+function ceknich(){
+echo -e "$COLOR1â”Œâ”€â”€â”€â€¢ ${NC}${COLBG1}Pilih Protocol ${NC}$COLOR1>>>               ${NC}"
+echo -e "$COLOR1â””â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”${NC}"
+cat /etc/xray/config.json | grep '^#' | cut -d ' ' -f 2 | sort | uniq > .xrayuser
+data=$(cat .xrayuser | sed 's/#[^ ]*//g')
+for USER in $data 
+do
+iplogin=$(cat /var/log/xray/access.log | grep $USER | awk '{print $3}' | sed 's/tcp://g' | sed 's/:0//g' | sort | uniq)
+jumlah=$(cat /var/log/xray/access.log | grep $USER | awk '{print $3}' | sed 's/tcp://g' | sed 's/:0//g' | sort | uniq | wc -l)
+quotaip=$(sqlite3 "$DB" "SELECT ip FROM user WHERE username = '$USER';")
+if [ $jumlah = 1 ]; then
+printf "%-10s %-10s %-20s\n" "$USER" "$jumlah/$quotaip" "$iplogin"
+fi
+if [ $jumlah -gt 1 ]; then
+printf "%-10s %-10s %-20s\n" "$USER" "$jumlah/$quotaip" ""
+for ip in $iplogin
+do
+printf "%-10s %-10s %-20s\n" "" "" "$ip"
+done
+fi
+done
+echo -e "$COLOR1â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€${NC}"
+}
+function renewxray (){
+cekxray
+echo "ctrl + c untuk exit"
+read -p "Masukkan Username: " username
+cekuser=$(sqlite3 "$DB" "SELECT username FROM user WHERE username = '$username';")
+if [[ $cekuser == "" ]]; then
+echo "username tidak ada"
+exit 0
+elif [[ $username == "" ]]; then
+echo "username tidak boleh kosong"
+exit 0
+fi
+read -p "tambah berapa hari: " masaaktif
+timestamp=$(date +%s)
+# timestamp + masaaktif
+exp=$(($timestamp + $masaaktif*86400))
+# timestamp to date and hour and minute
+expdate=$(date -d @$exp)
+# update expired
+sqlite3 "$DB" "UPDATE user SET exp = '$exp' WHERE username = '$username';"
+echo "user $username berhasil diperpanjang sampai $expdate"
+
+}
+
+echo -e "$COLOR1â”Œâ”€â”€â”€â”€â”€â”€â”€â”€â€¢ ${NC}${COLBG1}XRAY MENU ${NC}$COLOR1>>>               ${NC}"
+echo -e "$COLOR1â””â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€${NC}"
+echo -e " ${PURPLE}â”Œâ”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”${NC}"
+echo -e " ${PURPLE}$NC   ${COLOR1}[01]${NC} â€¢ CREATE      ${COLOR1}     [06]${NC} â€¢ ALL USER${NC}   ${PURPLE}$NC"
+echo -e " ${PURPLE}$NC   ${COLOR1}[02]${NC} â€¢ DELETE${NC}    ${COLOR1}       [07]${NC} â€¢ RESET USAGE    ${PURPLE}$NC"
+echo -e " ${PURPLE}$NC   ${COLOR1}[03]${NC} â€¢ RENEW${NC}    ${COLOR1}        [08]${NC} â€¢ LIST PELANGGAR    ${PURPLE}$NC"
+echo -e " ${PURPLE}$NC   ${COLOR1}[04]${NC} â€¢ CEK USER ONLINE${NC}  ${COLOR1}[09]${NC} â€¢ LIST USER EXP    ${PURPLE}$NC"
+echo -e " ${PURPLE}$NC   ${COLOR1}[05]${NC} â€¢ EDIT LIMIT     ${NC}  ${COLOR1}[10]${NC} â€¢ DAILY USAGE    ${PURPLE}$NC"
+echo -e " ${PURPLE}$NC   ${COLOR1}[11]${NC} â€¢ TRIAL     ${NC}  ${COLOR1}     [12]${NC} â€¢ CHECK CONFIG    ${PURPLE}$NC"
+echo -e " ${PURPLE}$NC                                              ${NC} ${PURPLE}$NC"
+echo -e " ${PURPLE}$NC   ${COLOR1}[00]${NC} â€¢ GO BACK${NC}                              ${PURPLE}$NC"
+echo -e " ${PURPLE}â””â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”˜${NC}"
+echo -e "${PURPLE}â”Œâ”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ BY â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”${NC}"
+echo -e "${PURPLE}â”‚${NC}                 â€¢  The Moon  â€¢                  ${PURPLE}â”‚$NC"
+echo -e "${PURPLE}â””â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”˜${NC}" 
+echo -e ""
+read -p " Select menu :  "  opt
+echo -e ""
+case $opt in
+1)
+  createxray ;;
+2) 
+ deletexray ;;
+3) 
+ renewxray ;;
+4) 
+ ceknich ;;
+5) 
+ editlimit ;;
+6) 
+ cekxray ;;
+7) 
+ resetxray ;;
+8) 
+ pelanggarxray ;;
+9) 
+  listexpxray ;; 
+10) 
+  dailyusage ;;
+11) 
+  trialxray ;;
+12) 
+  checkconfig ;;
+0) clear ; menu ;; 
+x) exit ;; 
+*) echo -e "Press any key to back exit" ; sleep 1 ; menuxray ;;
+esac

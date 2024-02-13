@@ -1,0 +1,243 @@
+#!/bin/bash
+COLOR1='\033[0;35m'
+export PURPLE='\033[0;35m'
+source cekip1
+NC='\e[0m'
+DB_NAME="/var/lib/minacantik/pemakaian.db"
+DB="/var/lib/minacantik/pemakaian.db"
+domain=$(cat /etc/xray/domain)
+user="trial$RANDOM"
+uuid=$(cat /proc/sys/kernel/random/uuid)
+timestamp=$(date +%s)
+# Add 1 hour to the timestamp
+exp=$(date -d "$(date -d "@$timestamp") + 1 hour" +%s)
+limitbw="1"
+limitbw1=$(($limitbw*1024*1024*1024))
+limitip="2"
+if [[ $1 == "vmess" ]]; then
+sed -i '/#vmess$/a\### '"$user -"'\
+},{"id": "'""$uuid""'","alterId": '"0"',"email": "'""$user""'"' /etc/xray/config.json
+# exp=`date -d "$masaaktif days" +"%Y-%m-%d"`
+sed -i '/#vmessgrpc$/a\### '"$user -"'\
+},{"id": "'""$uuid""'","alterId": '"0"',"email": "'""$user""'"' /etc/xray/config.json
+asu=`cat<<EOF
+      {
+      "v": "2",
+      "ps": "${user}",
+      "add": "${domain}",
+      "port": "443",
+      "id": "${uuid}",
+      "aid": "0",
+      "net": "ws",
+      "path": "/vmess",
+      "type": "none",
+      "host": "${domain}",
+      "tls": "tls"
+}
+EOF`
+ask=`cat<<EOF
+      {
+      "v": "2",
+      "ps": "${user}",
+      "add": "${domain}",
+      "port": "80",
+      "id": "${uuid}",
+      "aid": "0",
+      "net": "ws",
+      "path": "/vmess",
+      "type": "none",
+      "host": "${domain}",
+      "tls": "none"
+}
+EOF`
+grpc=`cat<<EOF
+      {
+      "v": "2",
+      "ps": "${user}",
+      "add": "${domain}",
+      "port": "443",
+      "id": "${uuid}",
+      "aid": "0",
+      "net": "grpc",
+      "path": "vmess-grpc",
+      "type": "none",
+      "host": "${domain}",
+      "tls": "tls"
+}
+EOF`
+vmess_base641=$( base64 -w 0 <<< $vmess_json1)
+vmess_base642=$( base64 -w 0 <<< $vmess_json2)
+vmess_base643=$( base64 -w 0 <<< $vmess_json3)
+vmesslink1="vmess://$(echo $asu | base64 -w 0)"
+vmesslink2="vmess://$(echo $ask | base64 -w 0)"
+vmesslink3="vmess://$(echo $grpc | base64 -w 0)"
+jam
+systemctl restart xray > /dev/null 2>&1
+QUERY="INSERT INTO user (username, protocol, id, exp, ip, bw) VALUES ('$user', 'vmess', '$uuid', '$exp', '$limitip', '$limitbw1');"
+tglexp=$(date -d "@$exp" "+%Y-%m-%d %H:%M")
+# Menjalankan query menggunakan perintah sqlite3
+sqlite3 $DB_NAME "$QUERY"
+
+clear
+echo -e "${PURPLE}â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€\033[0m" | tee -a /root/akun/vmess/$user.txt
+echo -e "        Xray/Vmess Account        \E[0m" | tee -a /root/akun/vmess/$user.txt
+echo -e "${PURPLE}â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€\033[0m" | tee -a /root/akun/vmess/$user.txt
+echo -e "Remarks          : ${user}" | tee -a /root/akun/vmess/$user.txt
+echo -e "Domain           : ${domain}" | tee -a /root/akun/vmess/$user.txt
+echo -e "Quota            : ${limitbw} GB" | tee -a /root/akun/vmess/$user.txt
+echo -e "Limit Ip         : ${limitip} Device" | tee -a /root/akun/vmess/$user.txt
+echo -e "Port TLS         : 443" | tee -a /root/akun/vmess/$user.txt
+echo -e "Port none TLS    : 80" | tee -a /root/akun/vmess/$user.txt
+echo -e "Port  GRPC       : 443" | tee -a /root/akun/vmess/$user.txt
+echo -e "id               : ${uuid}" | tee -a /root/akun/vmess/$user.txt
+echo -e "alterId          : 0" | tee -a /root/akun/vmess/$user.txt
+echo -e "Security         : auto" | tee -a /root/akun/vmess/$user.txt
+echo -e "Network          : ws" | tee -a /root/akun/vmess/$user.txt
+echo -e "Path             : /Multi-Path" | tee -a /root/akun/vmess/$user.txt
+echo -e "Dynamic          : http://bugmu.com/path" | tee -a /root/akun/vmess/$user.txt
+echo -e "ServiceName      : vmess-grpc" | tee -a /root/akun/vmess/$user.txt
+echo -e "${PURPLE}â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€\033[0m" | tee -a /root/akun/vmess/$user.txt
+echo -e "Link TLS         : ${vmesslink1}" | tee -a /root/akun/vmess/$user.txt
+echo -e "${PURPLE}â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€\033[0m" | tee -a /root/akun/vmess/$user.txt
+echo -e "Link none TLS    : ${vmesslink2}" | tee -a /root/akun/vmess/$user.txt
+echo -e "${PURPLE}â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€\033[0m" | tee -a /root/akun/vmess/$user.txt
+echo -e "Link GRPC        : ${vmesslink3}" | tee -a /root/akun/vmess/$user.txt
+echo -e "${PURPLE}â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€\033[0m" | tee -a /root/akun/vmess/$user.txt
+echo -e "Expired On       : $tglexp" | tee -a /root/akun/vmess/$user.txt
+echo -e "${PURPLE}â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€\033[0m" | tee -a /root/akun/vmess/$user.txt
+echo "" | tee -a /root/akun/vmess/$user.txt
+read -n 1 -s -r -p "Press any key to back on menu"
+menu
+
+
+elif [[ $1 == "vless" ]]; then
+sed -i '/#vless$/a\#& '"$user -"'\
+},{"id": "'""$uuid""'","email": "'""$user""'"' /etc/xray/config.json
+sed -i '/#vlessgrpc$/a\#& '"$user -"'\
+},{"id": "'""$uuid""'","email": "'""$user""'"' /etc/xray/config.json
+
+vlesslink1="vless://${uuid}@${domain}:443?path=/vless&security=tls&encryption=none&type=ws#${user}"
+vlesslink2="vless://${uuid}@${domain}:80?path=/vless&encryption=none&type=ws#${user}"
+vlesslink3="vless://${uuid}@${domain}:443?mode=gun&security=tls&encryption=none&type=grpc&serviceName=vless-grpc&sni=${domain}#${user}"
+jam
+systemctl restart xray
+# systemctl restart nginx
+QUERY="INSERT INTO user (username, protocol, id, exp, ip, bw) VALUES ('$user', 'vless', '$uuid', '$exp', '$limitip', '$limitbw1');"
+
+# Menjalankan query menggunakan perintah sqlite3
+sqlite3 $DB_NAME "$QUERY"
+tglexp=$(date -d "@$exp" "+%Y-%m-%d %H:%M")
+clear
+echo -e "$COLOR1â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€${NC}" | tee -a /root/akun/vless/$user.txt
+echo -e "    Xray/Vless Account     \E[0m" | tee -a /root/akun/vless/$user.txt
+echo -e "$COLOR1â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€${NC}" | tee -a /root/akun/vless/$user.txt
+echo -e "Remarks     : ${user}" | tee -a /root/akun/vless/$user.txt
+echo -e "Domain      : ${domain}" | tee -a /root/akun/vless/$user.txt
+echo -e "Quota       : ${limitbw} GB" | tee -a /root/akun/vmess/$user.txt
+echo -e "Limit       : ${limitip} Device" | tee -a /root/akun/vmess/$user.txt
+echo -e "port TLS    : 443" | tee -a /root/akun/vless/$user.txt
+echo -e "Port DNS    : 443" | tee -a /root/akun/vless/$user.txt
+echo -e "Port NTLS   : 80" | tee -a /root/akun/vless/$user.txt
+echo -e "User ID     : ${uuid}" | tee -a /root/akun/vless/$user.txt
+echo -e "Encryption  : none" | tee -a /root/akun/vless/$user.txt
+echo -e "Path TLS    : /vless " | tee -a /root/akun/vless/$user.txt
+echo -e "ServiceName : vless-grpc" | tee -a /root/akun/vless/$user.txt
+echo -e "$COLOR1â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€${NC}" | tee -a /root/akun/vless/$user.txt
+echo -e "Link TLS    : ${vlesslink1}" | tee -a /root/akun/vless/$user.txt
+echo -e "$COLOR1â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€${NC}" | tee -a /root/akun/vless/$user.txt
+echo -e "Link NTLS   : ${vlesslink2}" | tee -a /root/akun/vless/$user.txt
+echo -e "$COLOR1â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€${NC}" | tee -a /root/akun/vless/$user.txt
+echo -e "Link GRPC   : ${vlesslink3}" | tee -a /root/akun/vless/$user.txt
+echo -e "$COLOR1â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€${NC}" | tee -a /root/akun/vless/$user.txt
+echo -e "Expired On : $tglexp" | tee -a /root/akun/vless/$user.txt
+echo -e "$COLOR1â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€${NC}" | tee -a /root/akun/vless/$user.txt
+echo -e "" | tee -a /root/akun/vless/$user.txt
+read -n 1 -s -r -p "Press any key to back on menu"
+menu
+
+elif [[ $1 == "trojan" ]]; then
+sed -i '/#trojanws$/a\#! '"$user -"'\
+},{"password": "'""$uuid""'","email": "'""$user""'"' /etc/xray/config.json
+sed -i '/#trojangrpc$/a\#! '"$user -"'\
+},{"password": "'""$uuid""'","email": "'""$user""'"' /etc/xray/config.json
+
+echo "#! ${user} ${exp} ${uuid}" >>/root/akun/trojan/.trojan.conf
+jam
+# Link Trojan Akun
+systemctl restart xray
+trojanlink1="trojan://${uuid}@${domain}:443?mode=gun&security=tls&type=grpc&serviceName=trojan-grpc&sni=bug.com#${user}"
+trojanlink="trojan://${uuid}@bugkamu.com:443?path=%2Ftrojan-ws&security=tls&host=${domain}&type=ws&sni=${domain}#${user}"
+QUERY="INSERT INTO user (username, protocol, id, exp, ip, bw) VALUES ('$user', 'trojan', '$uuid', '$exp', '$limitip', '$limitbw1');"
+
+# Menjalankan query menggunakan perintah sqlite3
+sqlite3 $DB_NAME "$QUERY"
+tglexp=$(date -d "@$exp" "+%Y-%m-%d %H:%M")
+
+clear
+echo -e "$COLOR1â”Œâ”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”${NC}" | tee -a /root/akun/trojan/$user.txt
+echo -e "$COLOR1â”‚${NC}            â€¢ CREATE TROJAN USER â€¢              ${NC} $COLOR1â”‚$NC" | tee -a /root/akun/trojan/$user.txt
+echo -e "$COLOR1â””â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”˜${NC}" | tee -a /root/akun/trojan/$user.txt
+echo -e "Remarks          : ${user}" | tee -a /root/akun/trojan/$user.txt
+echo -e "Host/IP          : ${domain}" | tee -a /root/akun/trojan/$user.txt
+echo -e "Quota            : ${limitbw} GB" | tee -a /root/akun/vmess/$user.txt
+echo -e "Limit Ip         : ${limitip} Device" | tee -a /root/akun/vmess/$user.txt
+echo -e "port             : 443" | tee -a /root/akun/trojan/$user.txt
+echo -e "Key              : ${uuid}" | tee -a /root/akun/trojan/$user.txt
+echo -e "Path             : /trojan-ws" | tee -a /root/akun/trojan/$user.txt
+echo -e "ServiceName      : trojan-grpc" | tee -a /root/akun/trojan/$user.txt
+echo -e "$COLOR1â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€${NC}" | tee -a /root/akun/trojan/$user.txt
+echo -e "Link WS          : ${trojanlink}" | tee -a /root/akun/trojan/$user.txt
+echo -e "$COLOR1â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€${NC}" | tee -a /root/akun/trojan/$user.txt
+echo -e "Link GRPC        : ${trojanlink1}" | tee -a /root/akun/trojan/$user.txt
+echo -e "$COLOR1â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€${NC}" | tee -a /root/akun/trojan/$user.txt
+echo -e "Expired On       : $tglexp" | tee -a /root/akun/trojan/$user.txt
+echo -e "$COLOR1â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€${NC}" | tee -a /root/akun/trojan/$user.txt
+echo "" | tee -a /root/akun/trojan/$user.txt
+read -n 1 -s -r -p "Press any key to back on menu"
+menu
+elif [[ $1 == "ssh" ]]; then
+password="minatwicecantik"
+expdate=$(date -d @$exp +"%Y-%m-%d")
+username=$user
+rm -rf /home/$username && useradd -e $expdate $username -s /bin/false -m; { echo $password; echo $password; } | passwd $username; usermod -c gty@gmail.com $username
+sqlite3 "$DB" "insert into userssh ('username', 'password', 'limit', 'exp') values ('$username', '$password', '$limitip', '$exp');"
+tglexp=$(date -d "@$exp" "+%Y-%m-%d %H:%M")
+IP=$(curl -sS ifconfig.me);
+clear
+echo -e "$COLOR1â”Œâ”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”${NC}"
+echo -e "$COLOR1â”‚${NC}                â€¢ SSH PANEL MENU â€¢              ${NC} $COLOR1â”‚$NC"
+echo -e "$COLOR1â””â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”˜${NC}"
+echo -e "$COLOR1â”Œâ”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”${NC}"
+echo -e "Username : $username" | tee -a /etc/log-create-user.log
+echo -e "Password : $password" | tee -a /etc/log-create-user.log
+echo -e "limit IP : $limitip" | tee -a /etc/log-create-user.log
+echo -e "Expired On : $tglexp" | tee -a /etc/log-create-user.log
+echo -e "$COLOR1â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€${NC}" | tee -a /etc/log-create-user.log
+echo -e "IP Address : $IP" | tee -a /etc/log-create-user.log
+echo -e "Host : $domain" | tee -a /etc/log-create-user.log
+# echo -e "NsDomain : $nsdomain" | tee -a /etc/log-create-user.log
+echo -e "OpenSSH : 22, 2222, 2269, 53 " | tee -a /etc/log-create-user.log
+echo -e "Dropbear : 69, 143, 109, 110" | tee -a /etc/log-create-user.log
+echo -e "SSH-WS : 80" | tee -a /etc/log-create-user.log
+echo -e "SSH-SSL-WS : 443" | tee -a /etc/log-create-user.log
+echo -e "SSL/TLS : 442, 777, 222" | tee -a /etc/log-create-user.log
+echo -e "UDPGW : 7100-7300" | tee -a /etc/log-create-user.log
+# echo -e "PubKey : $Pub2" | tee -a /etc/log-create-user.log
+echo -e "$COLOR1â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€${NC}" | tee -a /etc/log-create-user.log
+echo -e "
+GET / [protocol][crlf]Host: [host][crlf]Connection: Keep-Alive[crlf]Connection: Upgrade[crlf]Upgrade: websocket[crlf][crlf]
+" | tee -a /etc/log-create-user.log
+echo -e "$COLOR1â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€${NC}" | tee -a /etc/log-create-user.log
+echo -e "
+GET wss://bug.com/ [protocol][crlf]Host: [host][crlf]Connection: Keep-Alive[crlf]Connection: Upgrade[crlf]Upgrade: websocket[crlf][crlf]
+" | tee -a /etc/log-create-user.log
+echo -e "$COLOR1â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€${NC}" | tee -a /etc/log-create-user.log
+echo -e "
+GET / [protocol][crlf]Host: $domain[crlf]Connection: Keep-Alive[crlf]Connection: Upgrade[crlf]Upgrade: websocket[crlf][crlf]
+" | tee -a /etc/log-create-user.log
+echo -e "$COLOR1â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€${NC}" | tee -a /etc/log-create-user.log
+echo -e "
+GET wss://bug.com/ [protocol][crlf]Host: $domain[crlf]Connection: Keep-Alive[crlf]Connection: Upgrade[crlf]Upgrade: websocket[crlf][crlf]
+" | tee -a /etc/log-create-user.log
+
+fi

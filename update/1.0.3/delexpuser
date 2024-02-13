@@ -1,0 +1,58 @@
+#!/bin/bash
+# This script is used to delete expired users xray
+DB="/var/lib/minacantik/pemakaian.db"
+timestamp=$(date +%s)
+userexp=$(sqlite3 "$DB" "SELECT username FROM user WHERE exp < '$timestamp'")
+# jumlah user expired
+jumlah=$(sqlite3 "$DB" "SELECT COUNT(username) FROM user WHERE exp < '$timestamp'")
+
+for user in $userexp
+do
+protocolxray=$(sqlite3 "$DB" "SELECT protocol FROM user WHERE username = '$user'")
+idxray=$(sqlite3 "$DB" "SELECT id FROM user WHERE username = '$user'")
+expxray=$(sqlite3 "$DB" "SELECT exp FROM user WHERE username = '$user'") 
+ipxray=$(sqlite3 "$DB" "SELECT ip FROM user WHERE username = '$user'")
+bwxray=$(sqlite3 "$DB" "SELECT bw FROM user WHERE username = '$user'")
+# insert to userexp
+sqlite3 "$DB" "INSERT INTO userexp (username, protocol, id, exp, ip, bw) VALUES ('$user', '$protocolxray', '$idxray', '$expxray', '$ipxray', '$bwxray');"
+# delete from config.json
+if [ "$protocolxray" = "vmess" ]; then
+sed -i "/^### $user -/,/^},{/d" /etc/xray/config.json
+elif [ "$protocolxray" = "vless" ]; then
+sed -i "/^#& $user -/,/^},{/d" /etc/xray/config.json
+elif [ "$protocolxray" = "trojan" ]; then
+sed -i "/^#! $user -/,/^},{/d" /etc/xray/config.json
+fi
+# delete from user
+sqlite3 "$DB" "DELETE FROM user WHERE username = '$user';"
+done
+# restart xray jika ada user yang expired
+if [ "$jumlah" -gt "0" ]; then
+jam
+systemctl restart xray > /dev/null 2>&1
+fi
+
+# This script is used to delete expired users ssh
+userexpssh=$(sqlite3 "$DB" "SELECT username FROM userssh WHERE exp < '$timestamp'")
+# jumlah user expired
+jumlahssh=$(sqlite3 "$DB" "SELECT COUNT(username) FROM userssh WHERE exp < '$timestamp'")
+for userssh in $userexpssh
+do
+passwordssh=$(sqlite3 "$DB" "SELECT password FROM userssh WHERE username = '$userssh'")
+limitssh=$(sqlite3 "$DB" "SELECT \"limit\" FROM userssh WHERE username = '$userssh'")
+expssh=$(sqlite3 "$DB" "SELECT exp FROM userssh WHERE username = '$userssh'")
+# insert to userexp
+sqlite3 "$DB" "INSERT INTO usersshexp (username, password, \"limit\", exp) VALUES ('$userssh', '$passwordssh', '$limitssh', '$expssh');"
+userdel $userssh
+rm -rf /home/$userssh
+# delete from userssh
+sqlite3 "$DB" "DELETE FROM userssh WHERE username = '$userssh';"
+
+done
+# hapus pelanggar
+pelanggar=$(sqlite3 "$DB" "SELECT username FROM pelanggar WHERE exp < '$timestamp'")
+for userpelanggar in $pelanggar
+do
+# delete from pelanggar
+sqlite3 "$DB" "DELETE FROM pelanggar WHERE username = '$userpelanggar';"
+done

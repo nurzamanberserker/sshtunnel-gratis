@@ -1,0 +1,125 @@
+#!/bin/bash
+COLOR1='\033[0;35m'
+NC='\e[0m'
+DB_NAME="/var/lib/minacantik/pemakaian.db"
+terlarang="user>>>>>>traffic>>>uplinkoutbound>>>blocked>>>traffic>>>uplinkvalueinbound>>>api>>>traffic>>>downlink";
+MYIP=$(wget -qO- ipinfo.io/ip);
+echo "Checking VPS"
+source cekip1
+source /var/lib/scrz-prem/ipvps.conf
+if [[ "$IP" = "" ]]; then
+domain=$(cat /etc/xray/domain)
+else
+domain=$IP
+fi
+tr="$(cat ~/log-install.txt | grep -w "Trojan WS " | cut -d: -f2|sed 's/ //g')"
+
+echo -e "$COLOR1â”Œâ”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”${NC}"
+echo -e "$COLOR1â”‚${NC}            â€¢ CREATE TROJAN USER â€¢              ${NC} $COLOR1â”‚$NC"
+echo -e "$COLOR1â””â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”˜${NC}"
+
+		read -rp "User: " -e user
+		CLIENT_EXISTS=$(grep -w $user /etc/xray/config.json | wc -l)
+
+		if [[ ${CLIENT_EXISTS} > '0' ]]; then
+    echo "username '$user' sudah ada, silakan masukkan username lain."
+clear
+menuxray
+		fi
+    if [[ $terlarang =~ $user ]]; then
+  echo "username '$user' terlarang, silakan masukkan username lain."
+  menuxray
+fi
+	
+
+uuid=$(cat /proc/sys/kernel/random/uuid)
+read -p "Expired (days): " masaaktif
+timestamp=$(date +%s)
+# Convert timestamp to a date, add 3 days, then convert back to a timestamp
+exp=$(date -d "$(date -d "@$timestamp") + $masaaktif days" +%s)
+# exp=`date -d "$masaaktif days" +"%Y-%m-%d"`
+read -p "limit ip(angka): " limitip
+read -p "limit bandwidth (gb): " limitbw
+limitbw1=$(($limitbw*1024*1024*1024))
+sed -i '/#trojanws$/a\#! '"$user -"'\
+},{"password": "'""$uuid""'","email": "'""$user""'"' /etc/xray/config.json
+sed -i '/#trojangrpc$/a\#! '"$user -"'\
+},{"password": "'""$uuid""'","email": "'""$user""'"' /etc/xray/config.json
+
+echo "#! ${user} ${exp} ${uuid}" >>/root/akun/trojan/.trojan.conf
+jam
+# Link Trojan Akun
+systemctl restart xray
+trojanlink1="trojan://${uuid}@${domain}:443?mode=gun&security=tls&type=grpc&serviceName=trojan-grpc&sni=bug.com#${user}"
+trojanlink="trojan://${uuid}@bugkamu.com:443?path=%2Ftrojan-ws&security=tls&host=${domain}&type=ws&sni=${domain}#${user}"
+
+cat >/var/www/html/trojan-$user.txt <<-END
+
+# Format Trojan GO/WS
+
+- name: Trojan-$user-GO/WS
+  server: ${domain}
+  port: 443
+  type: trojan
+  password: ${uuid}
+  network: ws
+  sni: ${domain}
+  skip-cert-verify: true
+  udp: true
+  ws-opts:
+    path: /trojan-ws
+    headers:
+        Host: ${domain}
+
+# Format Trojan gRPC
+
+- name: Trojan-$user-gRPC
+  type: trojan
+  server: ${domain}
+  port: 443
+  password: ${uuid}
+  udp: true
+  sni: ${domain}
+  skip-cert-verify: true
+  network: grpc
+  grpc-opts:
+    grpc-service-name: trojan-grpc
+
+-------------------------------------------------------
+                  Link Akun Trojan 
+-------------------------------------------------------
+Link WS          : ${trojanlink}
+-------------------------------------------------------
+Link GRPC        : ${trojanlink1}
+-------------------------------------------------------
+
+END
+QUERY="INSERT INTO user (username, protocol, id, exp, ip, bw) VALUES ('$user', 'trojan', '$uuid', '$exp', '$limitip', '$limitbw1');"
+
+# Menjalankan query menggunakan perintah sqlite3
+sqlite3 $DB_NAME "$QUERY"
+tglexp=$(date -d "@$exp" "+%Y-%m-%d %H:%M")
+
+clear
+echo -e "$COLOR1â”Œâ”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”${NC}" | tee -a /root/akun/trojan/$user.txt
+echo -e "$COLOR1â”‚${NC}            â€¢ CREATE TROJAN USER â€¢              ${NC} $COLOR1â”‚$NC" | tee -a /root/akun/trojan/$user.txt
+echo -e "$COLOR1â””â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”˜${NC}" | tee -a /root/akun/trojan/$user.txt
+echo -e "Remarks          : ${user}" | tee -a /root/akun/trojan/$user.txt
+echo -e "Host/IP          : ${domain}" | tee -a /root/akun/trojan/$user.txt
+echo -e "Quota            : ${limitbw} GB" | tee -a /root/akun/vmess/$user.txt
+echo -e "Limit Ip         : ${limitip} Device" | tee -a /root/akun/vmess/$user.txt
+echo -e "port             : 443" | tee -a /root/akun/trojan/$user.txt
+echo -e "Key              : ${uuid}" | tee -a /root/akun/trojan/$user.txt
+echo -e "Path             : /trojan-ws" | tee -a /root/akun/trojan/$user.txt
+echo -e "ServiceName      : trojan-grpc" | tee -a /root/akun/trojan/$user.txt
+echo -e "$COLOR1â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€${NC}" | tee -a /root/akun/trojan/$user.txt
+echo -e "Link WS          : ${trojanlink}" | tee -a /root/akun/trojan/$user.txt
+echo -e "$COLOR1â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€${NC}" | tee -a /root/akun/trojan/$user.txt
+echo -e "Link GRPC        : ${trojanlink1}" | tee -a /root/akun/trojan/$user.txt
+echo -e "$COLOR1â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€${NC}" | tee -a /root/akun/trojan/$user.txt
+echo -e "Expired On       : $tglexp" | tee -a /root/akun/trojan/$user.txt
+echo -e "$COLOR1â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€${NC}" | tee -a /root/akun/trojan/$user.txt
+echo "" | tee -a /root/akun/trojan/$user.txt
+read -n 1 -s -r -p "Press any key to back on menu"
+menu
+fi

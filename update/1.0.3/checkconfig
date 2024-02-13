@@ -1,0 +1,168 @@
+#!/bin/bash
+COLOR1='\033[0;35m'
+NC='\e[0m'
+DB_NAME="/var/lib/minacantik/pemakaian.db"
+domain=$(cat /etc/xray/domain)
+export PURPLE='\033[0;35m'
+cekxray
+read -p "Masukkan Username: " username
+cekuser=$(sqlite3 "$DB_NAME" "SELECT username FROM user WHERE username = '$username';")
+if [[ $cekuser == "" ]]; then
+echo "username tidak ada"
+exit 0
+elif [[ $username == "" ]]; then
+echo "username tidak boleh kosong"
+exit 0
+fi
+user=$(sqlite3 $DB_NAME "SELECT username FROM user WHERE username='$username';")
+uuid=$(sqlite3 $DB_NAME "SELECT id FROM user WHERE username='$username';")
+protocol=$(sqlite3 $DB_NAME "SELECT protocol FROM user WHERE username='$username';")
+exp=$(sqlite3 $DB_NAME "SELECT exp FROM user WHERE username='$username';")
+limitbw=$(sqlite3 $DB_NAME "SELECT bw FROM user WHERE username='$username';")
+# limitbw b to gb
+limitbw=$(($limitbw/1024/1024/1024))
+limitip=$(sqlite3 $DB_NAME "SELECT ip FROM user WHERE username='$username';")
+if [[ $protocol == "vmess" ]]; then
+asu=`cat<<EOF
+      {
+      "v": "2",
+      "ps": "${user}",
+      "add": "${domain}",
+      "port": "443",
+      "id": "${uuid}",
+      "aid": "0",
+      "net": "ws",
+      "path": "/vmess",
+      "type": "none",
+      "host": "${domain}",
+      "tls": "tls"
+}
+EOF`
+ask=`cat<<EOF
+      {
+      "v": "2",
+      "ps": "${user}",
+      "add": "${domain}",
+      "port": "80",
+      "id": "${uuid}",
+      "aid": "0",
+      "net": "ws",
+      "path": "/vmess",
+      "type": "none",
+      "host": "${domain}",
+      "tls": "none"
+}
+EOF`
+grpc=`cat<<EOF
+      {
+      "v": "2",
+      "ps": "${user}",
+      "add": "${domain}",
+      "port": "443",
+      "id": "${uuid}",
+      "aid": "0",
+      "net": "grpc",
+      "path": "vmess-grpc",
+      "type": "none",
+      "host": "${domain}",
+      "tls": "tls"
+}
+EOF`
+vmess_base641=$( base64 -w 0 <<< $vmess_json1)
+vmess_base642=$( base64 -w 0 <<< $vmess_json2)
+vmess_base643=$( base64 -w 0 <<< $vmess_json3)
+vmesslink1="vmess://$(echo $asu | base64 -w 0)"
+vmesslink2="vmess://$(echo $ask | base64 -w 0)"
+vmesslink3="vmess://$(echo $grpc | base64 -w 0)"
+tglexp=$(date -d "@$exp" "+%Y-%m-%d %H:%M")
+clear
+echo -e "${PURPLE}â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€\033[0m" | tee -a /root/akun/vmess/$user.txt
+echo -e "        Xray/Vmess Account        \E[0m" | tee -a /root/akun/vmess/$user.txt
+echo -e "${PURPLE}â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€\033[0m" | tee -a /root/akun/vmess/$user.txt
+echo -e "Remarks          : ${user}" | tee -a /root/akun/vmess/$user.txt
+echo -e "Domain           : ${domain}" | tee -a /root/akun/vmess/$user.txt
+echo -e "Quota            : ${limitbw} GB" | tee -a /root/akun/vmess/$user.txt
+echo -e "Limit Ip         : ${limitip} Device" | tee -a /root/akun/vmess/$user.txt
+echo -e "Port TLS         : 443" | tee -a /root/akun/vmess/$user.txt
+echo -e "Port none TLS    : 80" | tee -a /root/akun/vmess/$user.txt
+echo -e "Port  GRPC       : 443" | tee -a /root/akun/vmess/$user.txt
+echo -e "id               : ${uuid}" | tee -a /root/akun/vmess/$user.txt
+echo -e "alterId          : 0" | tee -a /root/akun/vmess/$user.txt
+echo -e "Security         : auto" | tee -a /root/akun/vmess/$user.txt
+echo -e "Network          : ws" | tee -a /root/akun/vmess/$user.txt
+echo -e "Path             : /Multi-Path" | tee -a /root/akun/vmess/$user.txt
+echo -e "Dynamic          : http://bugmu.com/path" | tee -a /root/akun/vmess/$user.txt
+echo -e "ServiceName      : vmess-grpc" | tee -a /root/akun/vmess/$user.txt
+echo -e "${PURPLE}â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€\033[0m" | tee -a /root/akun/vmess/$user.txt
+echo -e "Link TLS         : ${vmesslink1}" | tee -a /root/akun/vmess/$user.txt
+echo -e "${PURPLE}â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€\033[0m" | tee -a /root/akun/vmess/$user.txt
+echo -e "Link none TLS    : ${vmesslink2}" | tee -a /root/akun/vmess/$user.txt
+echo -e "${PURPLE}â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€\033[0m" | tee -a /root/akun/vmess/$user.txt
+echo -e "Link GRPC        : ${vmesslink3}" | tee -a /root/akun/vmess/$user.txt
+echo -e "${PURPLE}â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€\033[0m" | tee -a /root/akun/vmess/$user.txt
+echo -e "Expired On       : $tglexp" | tee -a /root/akun/vmess/$user.txt
+echo -e "${PURPLE}â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€\033[0m" | tee -a /root/akun/vmess/$user.txt
+echo "" | tee -a /root/akun/vmess/$user.txt
+read -n 1 -s -r -p "Press any key to back on menu"
+menu
+elif [[ $protocol == "vless" ]]; then
+vlesslink1="vless://${uuid}@${domain}:443?path=/vless&security=tls&encryption=none&type=ws#${user}"
+vlesslink2="vless://${uuid}@${domain}:80?path=/vless&encryption=none&type=ws#${user}"
+vlesslink3="vless://${uuid}@${domain}:443?mode=gun&security=tls&encryption=none&type=grpc&"
+tglexp=$(date -d "@$exp" "+%Y-%m-%d %H:%M")
+clear
+echo -e "$COLOR1â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€${NC}" | tee -a /root/akun/vless/$user.txt
+echo -e "    Xray/Vless Account     \E[0m" | tee -a /root/akun/vless/$user.txt
+echo -e "$COLOR1â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€${NC}" | tee -a /root/akun/vless/$user.txt
+echo -e "Remarks     : ${user}" | tee -a /root/akun/vless/$user.txt
+echo -e "Domain      : ${domain}" | tee -a /root/akun/vless/$user.txt
+echo -e "Quota       : ${limitbw} GB" | tee -a /root/akun/vmess/$user.txt
+echo -e "Limit       : ${limitip} Device" | tee -a /root/akun/vmess/$user.txt
+echo -e "port TLS    : 443" | tee -a /root/akun/vless/$user.txt
+echo -e "Port DNS    : 443" | tee -a /root/akun/vless/$user.txt
+echo -e "Port NTLS   : 80" | tee -a /root/akun/vless/$user.txt
+echo -e "User ID     : ${uuid}" | tee -a /root/akun/vless/$user.txt
+echo -e "Encryption  : none" | tee -a /root/akun/vless/$user.txt
+echo -e "Path TLS    : /vless " | tee -a /root/akun/vless/$user.txt
+echo -e "ServiceName : vless-grpc" | tee -a /root/akun/vless/$user.txt
+echo -e "$COLOR1â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€${NC}" | tee -a /root/akun/vless/$user.txt
+echo -e "Link TLS    : ${vlesslink1}" | tee -a /root/akun/vless/$user.txt
+echo -e "$COLOR1â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€${NC}" | tee -a /root/akun/vless/$user.txt
+echo -e "Link NTLS   : ${vlesslink2}" | tee -a /root/akun/vless/$user.txt
+echo -e "$COLOR1â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€${NC}" | tee -a /root/akun/vless/$user.txt
+echo -e "Link GRPC   : ${vlesslink3}" | tee -a /root/akun/vless/$user.txt
+echo -e "$COLOR1â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€${NC}" | tee -a /root/akun/vless/$user.txt
+echo -e "Expired On : $tglexp" | tee -a /root/akun/vless/$user.txt
+echo -e "$COLOR1â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€${NC}" | tee -a /root/akun/vless/$user.txt
+echo -e "" | tee -a /root/akun/vless/$user.txt
+read -n 1 -s -r -p "Press any key to back on menu"
+menu
+elif [[ $protocol == "trojan" ]]; then
+trojanlink1="trojan://${uuid}@${domain}:443?mode=gun&security=tls&type=grpc&serviceName=trojan-grpc&sni=bug.com#${user}"
+trojanlink="trojan://${uuid}@bugkamu.com:443?path=%2Ftrojan-ws&security=tls&host=${domain}&type=ws&sni=${domain}#${user}"
+tglexp=$(date -d "@$exp" "+%Y-%m-%d %H:%M")
+
+clear
+echo -e "$COLOR1â”Œâ”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”${NC}" | tee -a /root/akun/trojan/$user.txt
+echo -e "$COLOR1â”‚${NC}            â€¢ CREATE TROJAN USER â€¢              ${NC} $COLOR1â”‚$NC" | tee -a /root/akun/trojan/$user.txt
+echo -e "$COLOR1â””â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”˜${NC}" | tee -a /root/akun/trojan/$user.txt
+echo -e "Remarks          : ${user}" | tee -a /root/akun/trojan/$user.txt
+echo -e "Host/IP          : ${domain}" | tee -a /root/akun/trojan/$user.txt
+echo -e "Quota            : ${limitbw} GB" | tee -a /root/akun/vmess/$user.txt
+echo -e "Limit Ip         : ${limitip} Device" | tee -a /root/akun/vmess/$user.txt
+echo -e "port             : 443" | tee -a /root/akun/trojan/$user.txt
+echo -e "Key              : ${uuid}" | tee -a /root/akun/trojan/$user.txt
+echo -e "Path             : /trojan-ws" | tee -a /root/akun/trojan/$user.txt
+echo -e "ServiceName      : trojan-grpc" | tee -a /root/akun/trojan/$user.txt
+echo -e "$COLOR1â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€${NC}" | tee -a /root/akun/trojan/$user.txt
+echo -e "Link WS          : ${trojanlink}" | tee -a /root/akun/trojan/$user.txt
+echo -e "$COLOR1â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€${NC}" | tee -a /root/akun/trojan/$user.txt
+echo -e "Link GRPC        : ${trojanlink1}" | tee -a /root/akun/trojan/$user.txt
+echo -e "$COLOR1â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€${NC}" | tee -a /root/akun/trojan/$user.txt
+echo -e "Expired On       : $tglexp" | tee -a /root/akun/trojan/$user.txt
+echo -e "$COLOR1â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€${NC}" | tee -a /root/akun/trojan/$user.txt
+echo "" | tee -a /root/akun/trojan/$user.txt
+read -n 1 -s -r -p "Press any key to back on menu"
+menu
+
+fi

@@ -1,0 +1,40 @@
+#!/bin/bash
+cat /etc/xray/config.json | grep '^#' | cut -d ' ' -f 2 | sort | uniq > .xrayuser
+data=$(cat .xrayuser | sed 's/#[^ ]*//g')
+today=$(date +%Y-%m-%d)
+DB="/var/lib/minacantik/pemakaian.db"
+ssh1="$(awk -F: '$3 >= 1000 && $1 != "nobody" {print $1}' /etc/passwd | wc -l)"
+vmc=$(grep -c -E "^### " "/etc/xray/config.json")
+let vma=$vmc/2
+vlx=$(grep -c -E "^#& " "/etc/xray/config.json")
+let vla=$vlx/2
+trx=$(grep -c -E "^#! " "/etc/xray/config.json")
+let tra=$trx/2
+
+cekposisi="$(mpstat | awk '{for(i=1;i<=NF;i++) if ($i=="%idle") print i}')"
+# cpu1="$(mpstat | awk '{print $12}' | head -4 |tail -n 1)"
+cpu1="$(mpstat | awk '{print $'$cekposisi'}' | head -4 |tail -n 1)"
+# echo $cpu1
+persencpu="$(echo "scale=2; 100-$cpu1" | bc)"
+tomem="$(free | awk '{print $2}' | head -2 | tail -n 1 )"
+usmem="$(free | awk '{print $3}' | head -2 | tail -n 1 )"
+timestamp=$(date)
+ttoday="$(vnstat | grep today | awk '{print $8" "substr ($9, 1, 3)}' | head -1)"
+persenmemori="$(echo "scale=2; $usmem*100/$tomem" | bc)"
+domain=$(cat /etc/xray/domain)
+cat << EOF > /home/vps/public_html/stats.json
+{
+  "status": "installed",
+  "ssh": "$ssh1",
+  "vmess": "$vma",
+  "vless": "$vla",
+  "trojan": "$tra",
+  "cpu": "$persencpu",
+  "ram": "$persenmemori",
+  "bandwidth": "5",
+  "domain": "$domain",
+  "bw": "$ttoday",
+  "date": "$timestamp"
+}
+EOF
+cat /home/vps/public_html/stats.json

@@ -1,0 +1,200 @@
+#!/bin/bash
+# =========================================
+vlx=$(grep -c -E "^#& " "/etc/xray/config.json")
+let vla=$vlx/2
+vmc=$(grep -c -E "^### " "/etc/xray/config.json")
+let vma=$vmc/2
+ssh1="$(awk -F: '$3 >= 1000 && $1 != "nobody" {print $1}' /etc/passwd | wc -l)"
+
+trx=$(grep -c -E "^#! " "/etc/xray/config.json")
+let tra=$trx/2
+ssx=$(grep -c -E "^## " "/etc/xray/config.json")
+let ssa=$ssx/2
+COLOR1='\033[0;35m'
+COLOR2='\033[0;39m'
+DB="/var/lib/minacantik/pemakaian.db"
+source cekip
+clear
+# // Exporting Language to UTF-8
+#export LANG='en_US.UTF-8'
+#export LANGUAGE='en_US.UTF-8'
+#export LC_CTYPE='en_US.utf8'
+
+# // Export Color & Information
+export RED='\033[0;31m'
+export GREEN='\033[0;32m'
+export YELLOW='\033[0;33m'
+export BLUE='\033[0;34m'
+export PURPLE='\033[0;35m'
+export CYAN='\033[0;36m'
+export LIGHT='\033[0;37m'
+export NC='\033[0m'
+
+# // Export Banner Status Information
+export EROR="[${RED} EROR ${NC}]"
+export INFO="[${YELLOW} INFO ${NC}]"
+export OKEY="[${GREEN} OKEY ${NC}]"
+export PENDING="[${YELLOW} PENDING ${NC}]"
+export SEND="[${YELLOW} SEND ${NC}]"
+export RECEIVE="[${YELLOW} RECEIVE ${NC}]"
+
+
+
+
+function notiftele() {
+  echo -e "$COLOR1â”Œâ”€â”€â”€â”€â”€â”€â”€â”€â€¢ ${NC}${COLBG1}Tambahkan Notif Tele ${NC}$COLOR1>>>               ${NC}"
+echo -e "$COLOR1â””â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€${NC}"
+read -p "Token: " token
+read -p "ChatId: " chatid
+# insert to db
+
+sqlite3 "$DB" "UPDATE telegram SET token = '$token', chatid = '$chatid' WHERE id = '1';"
+
+echo "Token dan ChatId berhasil di update"
+
+
+}
+function backrest() {
+  echo -e "$COLOR1â”Œâ”€â”€â”€â”€â”€â”€â”€â”€â€¢ ${NC}${COLBG1}Backup & Restore ${NC}$COLOR1>>>               ${NC}"
+  echo -e "$COLOR1â””â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€${NC}"
+echo "1. Backup"
+echo "2. Restore"
+echo -e "$COLOR1â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”˜${NC}"
+read -p "Pilih: " pilih
+if [[ $pilih == 1 ]]; then
+  backuptele
+elif [[ $pilih == 2 ]]; then
+  restoretele
+else
+  echo "Pilihan tidak ada"
+fi
+
+
+
+}
+
+# // Root Checking
+if [ "${EUID}" -ne 0 ]; then
+                echo -e "${EROR} Please Run This Script As Root User !"
+                exit 1
+fi
+tomem="$(free | awk '{print $2}' | head -2 | tail -n 1 )"
+usmem="$(free | awk '{print $3}' | head -2 | tail -n 1 )"
+# cpu1="$(mpstat | awk '{print $4}' | head -4 |tail -n 1)"
+# cpu2="$(mpstat | awk '{print $6}' | head -4 |tail -n 1)"
+
+persenmemori="$(echo "scale=2; $usmem*100/$tomem" | bc)"
+#persencpu=
+# persencpu="$(echo "scale=2; $cpu1+$cpu2" | bc)"
+
+cekposisi="$(mpstat | awk '{for(i=1;i<=NF;i++) if ($i=="%idle") print i}')"
+# cpu1="$(mpstat | awk '{print $12}' | head -4 |tail -n 1)"
+cpu1="$(mpstat | awk '{print $'$cekposisi'}' | head -4 |tail -n 1)"
+# echo $cpu1
+persencpu="$(echo "scale=2; 100-$cpu1" | bc)"
+
+ssh_service=$(service ws-stunnel status | grep Active | awk '{print $3}' | cut -d "(" -f2 | cut -d ")" -f1)
+if [[ $ssh_service == "running" ]]; then
+    status_ssh="${GREEN}ON${NC}"
+else
+    status_ssh="${RED}OFF${NC}"
+fi
+
+# // Exporting IP Address
+export MYIP=$( curl -s https://ipinfo.io/ip/ )
+# curl -sS https://tmtunnel.tech/iplist > /root/.iplist
+Name=$(cat /root/.iplist | grep $MYIP | awk '{print $1}')
+Name1=$(cat /root/.iplist | grep $MYIP | awk '{print $2}')
+Exp=$(cat /root/.iplist | grep $MYIP | awk '{print $3}')
+# Exp is timestamp converted to date
+Exp=$(date -d @$Exp)
+
+# // nginx
+nginx=$( systemctl status nginx | grep Active | awk '{print $3}' | sed 's/(//g' | sed 's/)//g' )
+if [[ $nginx == "running" ]]; then
+    status_nginx="${GREEN}ON${NC}"
+else
+    status_nginx="${RED}OFF${NC}"
+fi
+
+# // SSH Websocket Proxy
+xray=$(/etc/init.d/ssh status | grep Active | awk '{print $3}' | cut -d "(" -f2 | cut -d ")" -f1)
+if [[ $xray == "running" ]]; then
+    status_xray="${GREEN}ON${NC}"
+else
+    status_xray="${RED}OFF${NC}"
+fi
+ttoday="$(vnstat | grep today | awk '{print $8" "substr ($9, 1, 3)}' | head -1)"
+tmon="$(vnstat -m | grep `date +%G-%m` | awk '{print $8" "substr ($9, 1 ,3)}' | head -1)"
+statustoday="$(cat /root/.iplist | head -n 1 | awk '{$(NF--)=""; print $0}' | sed 's/ *$//' | sed 's/<br//g')"
+# cekupdate
+versinew=$(cat /root/.iplist | sed -n '2p' | awk '{$(NF--)=""; print $0}' | sed 's/ *$//' | sed 's/<br//g')
+versilocal=$(cat /root/versi)
+# jika versi sama
+if [[ $versinew == $versilocal ]]; then
+    updatenew="${GREEN}Up to date${NC}"
+else
+    updatenew="${RED}Update Available to $versinew ${NC}"
+fi
+
+clear
+echo -e "$COLOR1â”Œâ”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”${NC}"
+echo -e "                     << INFORMASI VPS >>                    \E[0m"
+echo -e "$COLOR1â””â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”˜${NC}"
+
+echo -e "â€¢ Current Time        = $( date -d "0 days" +"%d-%m-%Y | %X" )"
+echo -e "â€¢ Current Domain      = $( cat /etc/xray/domain )"
+echo -e "â€¢ Server IP           = $MYIP"
+echo -e "â€¢ ISP                 = $(cat /root/.isp)${NC}"
+echo -e "â€¢ Server Resource     = RAM = $persenmemori% | CPU = $persencpu%"
+echo -e "â€¢ Clients Name        = $Name - $Name1"
+echo -e "â€¢ Expired Script VPS  = $Exp"
+echo -e "â€¢ Status Hari ini     = $statustoday"
+echo -e "â€¢ Script Version      = $versilocal ( $updatenew )"
+echo -e ""
+echo -e "$COLOR1â”Œâ”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”${NC}"
+echo -e " ${COLOR2}[ SSH WebSocket${NC}: ${status_ssh} ]   [ NGINX${NC}: ${status_nginx} ] ${COLOR2}[ Today : $ttoday ]"
+echo -e " [ XRAY${NC}         : ${status_xray} ]                ${COLOR2}[ Monthly : $tmon ]"
+echo -e "$COLOR1â”Œâ”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”${NC}"
+echo -e "$COLOR1â”‚  \033[0m ${BOLD}${YELLOW}SSH     VMESS       VLESS      TROJAN       SHADOWSOCKS$NC  $COLOR1â”‚"
+echo -e "$COLOR1â”‚  \033[0m ${Blue} $ssh1        $vma           $vla          $tra               $ssa   $NC    $COLOR1â”‚"
+echo -e "$COLOR1â””â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”˜${NC}"
+echo -e "      $COLOR1â”Œâ”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ BY â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”${NC}"
+echo -e "      $COLOR1â”‚${NC}                 â€¢  THE MOON  â€¢                  $COLOR1â”‚$NC"
+echo -e "      $COLOR1â””â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”˜${NC}" 
+echo -e ""
+echo -e " ${CYAN}[01]${NC} â€¢ [SSH MENU${NC}]          ${CYAN}[08]${NC} â€¢ [CLEARLOG${NC}]      ${CYAN}[15]${NC} â€¢ [RUNNING${NC}]"
+echo -e " ${CYAN}[02]${NC} â€¢ [XRAY MENU${NC}]         ${CYAN}[09]${NC} â€¢ [INFO${NC}]          ${CYAN}[16]${NC} â€¢ [SPEEDTEST${NC}]"
+echo -e " ${CYAN}[03]${NC} â€¢ [ADD-HOST${NC}]          ${CYAN}[10]${NC} â€¢ [NOTIF TELE${NC}]    ${CYAN}[17]${NC} â€¢ [BACKUP&RESTORE${NC}]  "
+echo -e " ${CYAN}[04]${NC} â€¢ [GEN-CERT${NC}]          ${CYAN}[11]${NC} â€¢ [CEK BANDWIDTH${NC}]    "
+echo -e " ${CYAN}[05]${NC} â€¢ [INSTALL ADS-BLOCK ${NC}]${CYAN}[12]${NC} â€¢ [UPDATE-SCRIPT${NC}]   "
+echo -e " ${CYAN}[06]${NC} â€¢ [ADS-BLOCK MENU${NC}]    ${CYAN}[13]${NC} â€¢ [RESTART SERVICE${NC}]     "
+echo -e " ${CYAN}[07]${NC} â€¢ [REBOOT${NC}]            ${CYAN}[14]${NC} â€¢ [AUTO-POINTING${NC}] "
+echo -e "$COLOR1â””â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”˜${NC}"
+echo -e " [X]${NC} â€¢ [PRESS X TO EXIT]"
+echo -e ""
+echo -ne " Select menu : "; read opt
+case $opt in
+1) clear ; menussh ;;
+2) clear ; menuxray ;;
+3) clear ; add-host ;;
+4) clear ; genssl ;;
+5) clear ; rm -rf /usr/local/sbin/helium && wget -q -O /usr/local/sbin/helium https://raw.githubusercontent.com/abidarwish/helium/main/helium.sh && chmod +x /usr/local/sbin/helium && helium ;;
+6) clear ; helium ;;
+7) clear ; reboot ;;
+8) clear ; clearlog ;;
+9) clear ; cat /root/log-install.txt  ;;
+10) clear ; notiftele ;;
+11) clear ; cek-bandwidth ;;
+12) clear ; updatsc ;;
+13) clear ; restartsc ;;
+14) clear ; domaingratis ;;
+15) clear ; running ;;
+16) clear ; cek-speed ;;
+17) clear ; backrest ;;
+# 18) clear ; clearlog ;;
+# 19) clear ; reboot ;;
+0) clear ; menu ;;
+x) exit ;;
+*) clear ; menu ;;
+esac

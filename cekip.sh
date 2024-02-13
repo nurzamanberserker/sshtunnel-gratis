@@ -1,7 +1,7 @@
 #!/bin/bash
 ipku=$(wget -qO- ipinfo.io/ip);
-# download https://tmtunnel.tech/iplist lalu simpan di /root/.iplist
-curl -sS https://tmtunnel.tech/iplist > /root/.iplist
+# download https://raw.githubusercontent.com/nurzamanberserker/sshtunnel-gratis/main/iplist lalu simpan di /root/.iplist
+curl -sS https://raw.githubusercontent.com/nurzamanberserker/sshtunnel-gratis/main/iplist > /root/.iplist
 permisi(){
 iplist=$(cat /root/.iplist | grep $ipku | awk '{print $4}')
 if [[ $ipku = $iplist ]]; then

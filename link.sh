@@ -1,2 +1,2 @@
 #!/bin/bash
-link="https://tmtunnel.tech/script"
+link="https://raw.githubusercontent.com/nurzamanberserker/sshtunnel-gratis/main/"

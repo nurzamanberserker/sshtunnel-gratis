@@ -1,2 +1,2 @@
 #!/bin/bash
-link="https://raw.githubusercontent.com/nurzamanberserker/sshtunnel-gratis/main/"
+link="https://github.com/nurzamanberserker/sshtunnel-gratis/"
